@@ -1,9 +1,5 @@
 DOCKER_TAG=canvas-build-environment
 
-CANVAS_PREBUILT_VERSION=2.6.1-patched
-CANVAS_VERSION_TO_BUILD=2.6.1
-NODEJS_VERSIONS=6 7 8 9 10 11 12 13
-
 .PHONY: build-environment
 build-environment:
 	cd docker && \

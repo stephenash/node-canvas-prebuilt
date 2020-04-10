@@ -43,7 +43,7 @@ RUN curl -LO https://downloads.sourceforge.net/project/giflib/giflib-${GIFLIB_VE
 
 # Previous 3.2.1
 ARG LIBFFI_VERSION=3.3
-RUN curl -O ftp://sourceware.org/pub/libffi/libffi-${LIBFFI_VERSION}.tar.gz && \
+RUN curl -O https://sourceware.org/ftp/libffi/libffi-${LIBFFI_VERSION}.tar.gz && \
   tar -xvf libffi-${LIBFFI_VERSION}.tar.gz && \
   cd libffi-${LIBFFI_VERSION} && \
   ./configure && make && make install
