@@ -31,7 +31,7 @@ source ci/$OS/preinstall.sh
 
 cp ci/$OS/binding.gyp node-canvas/binding.gyp
 
-for ver in $NODEJS_VERSIONS; do 
+for ver in $NODEJS_VERSIONS; do
   echo "------------ Building with node $ver ------------"
 
   source ci/$OS/node_version.sh $ver;
@@ -54,10 +54,3 @@ for ver in $NODEJS_VERSIONS; do
 
   source ci/tarball.sh $CANVAS_PREBUILT_VERSION;
 done;
-
-echo "------------ Releasing with release.js ------------"
-source ci/$OS/node_version.sh 11
-node ci/release.js $PREBUILD_VERSION || exit 1;
-
-cd ..
-
