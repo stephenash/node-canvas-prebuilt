@@ -1,5 +1,6 @@
 .DS_Store
-canvas/
+pax-utils
+node-canvas/
 *.tar.gz
 package-lock.json
 node_modules

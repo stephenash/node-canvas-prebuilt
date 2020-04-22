@@ -1,5 +1,4 @@
 language: node_js
-sudo: required
 services:
   - docker
 os:
@@ -7,12 +6,57 @@ os:
   - osx
 osx_image: xcode9.3
 env:
-  - CANVAS_PREBUILT_VERSION="2.6.1-patched" CANVAS_VERSION_TO_BUILD="2.6.1" NODEJS_VERSIONS="6 7 8 9 10 11 12 13"
-script:
-  - >-
-    if [ $TRAVIS_OS_NAME = "linux" ]; then
-      make build-environment
-      make build-canvas
-    else
-      bash ci/install.sh osx "$CANVAS_PREBUILT_VERSION" "$CANVAS_VERSION_TO_BUILD" "$NODEJS_VERSIONS";
+  jobs:
+    - CANVAS_PREBUILT_VERSION="2.6.1" CANVAS_VERSION_TO_BUILD="2.6.1" NODEJS_VERSIONS="6 7 8 9 10 11 12 13"
+
+before_script:
+  - |
+    export DOCKER_TAG=$TRAVIS_REPO_SLUG:latest
+    if [ "$TRAVIS_OS_NAME" = "linux" ]; then
+      docker pull $DOCKER_TAG || true
+      cd docker
+      docker build \
+        --cache-from $DOCKER_TAG \
+        --tag $DOCKER_TAG \
+        .
+      cd ..
     fi
+
+script:
+  - |
+    if [ "$TRAVIS_OS_NAME" = "linux" ]; then
+      docker run \
+        --env CANVAS_PREBUILT_VERSION \
+        --env CANVAS_VERSION_TO_BUILD \
+        --env NODEJS_VERSIONS \
+        --volume "$(pwd):/build" $DOCKER_TAG \
+        bash -c 'cd /build; export NVM_DIR=$HOME/.nvm; . $HOME/.nvm/nvm.sh; . ci/install.sh linux "$CANVAS_PREBUILT_VERSION" "$CANVAS_VERSION_TO_BUILD" "$NODEJS_VERSIONS"'
+    elif [ "$TRAVIS_OS_NAME" = "osx" ]; then
+      # macOS + node6 does not build
+      export MACOS_NODEJS_VERSIONS=$(echo $NODEJS_VERSIONS | tr '[:space:]' '\n' | sed 's/^6.*//g' | paste -s -d ' ' -)
+
+      export PKG_CONFIG_PATH="/usr/local/opt/libffi/lib/pkgconfig"
+      bash ci/install.sh osx "$CANVAS_PREBUILT_VERSION" "$CANVAS_VERSION_TO_BUILD" "$MACOS_NODEJS_VERSIONS";
+    fi
+
+# In order to deploy, the following environment variables are expected to be defined through Travis CI
+# PREBUILD_AUTH: GitHub auth token
+# DOCKER_USERNAME, DOCKER_PASSWORD: Docker Hub authentication
+deploy:
+  provider: script
+  on:
+    branch: master
+  script:
+    - |
+      if [ "$TRAVIS_OS_NAME" = "linux" ]; then
+        docker login -u $DOCKER_USERNAME -p $DOCKER_PASSWORD
+        docker push $DOCKER_TAG
+        docker run \
+          --env CANVAS_PREBUILT_VERSION \
+          --env PREBUILD_AUTH \
+          --env PREBUILD_SLUG=$TRAVIS_REPO_SLUG \
+          --volume "$(pwd):/build" $DOCKER_TAG \
+          bash -c 'cd /build; export NVM_DIR=$HOME/.nvm; . $HOME/.nvm/nvm.sh; . ci/release.sh linux "$CANVAS_PREBUILT_VERSION"'
+      elif [ "$TRAVIS_OS_NAME" = "osx" ]; then
+        bash release.sh osx "$CANVAS_PREBUILT_VERSION"
+      fi
