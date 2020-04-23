@@ -48,3 +48,4 @@ deploy:
     branch: master
   # Travis CI does not support multiline deploy scripts. So have to keep everything in a single file instead
   script: bash ci/travis-ci-deploy.sh
+  skip_cleanup: true
